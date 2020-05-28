@@ -4,6 +4,7 @@ import 'package:quallet_scratch_v1/home.dart';
 import 'HexColor.dart';
 import 'slot.dart';
 import 'dart:convert';
+import 'logic.dart';
 
 class BleConnect extends StatefulWidget {
   @override
@@ -15,9 +16,35 @@ class BleConnect extends StatefulWidget {
 }
 
 class _BleConnectState extends State<BleConnect> {
-  final _writeController = TextEditingController();
+  final String send_uuid = '0000ffe0-0000-1000-8000-00805f9b34fb';
+  final String recieve_uuid = '0000ffe1-0000-1000-8000-00805f9b34fb';
   BluetoothDevice _connectedDevice;
   List<BluetoothService> _services;
+
+  void beginNotification() async {
+    print("begin Notification started");
+    BluetoothCharacteristic characteristic_real;
+
+    for (BluetoothService service in _services) {
+      print(service.uuid.toString() == send_uuid);
+      if (service.uuid.toString() == send_uuid) {
+        for (BluetoothCharacteristic characteristic
+            in service.characteristics) {
+          if (characteristic.uuid.toString() == recieve_uuid) {
+            characteristic_real = characteristic;
+          }
+        }
+      }
+    }
+
+    characteristic_real.value.listen((value) {
+      widget.readValues[characteristic_real.uuid] = value;
+      cardStatus(value);
+      //Home();
+      print(value);
+    });
+    await characteristic_real.setNotifyValue(true);
+  }
 
   _addDeviceTolist(final BluetoothDevice device) {
     if (!widget.devicesList.contains(device)) {
@@ -27,6 +54,13 @@ class _BleConnectState extends State<BleConnect> {
     }
   }
 
+  void gotoHomePage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => Home()),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -34,18 +68,23 @@ class _BleConnectState extends State<BleConnect> {
         .asStream()
         .listen((List<BluetoothDevice> devices) {
       for (BluetoothDevice device in devices) {
-        _addDeviceTolist(device);
+        if (device.name.contains('Quallet')) {
+          _addDeviceTolist(device);
+        }
       }
     });
     widget.flutterBlue.scanResults.listen((List<ScanResult> results) {
       for (ScanResult result in results) {
-        _addDeviceTolist(result.device);
+        if (result.device.name.contains('Quallet')) {
+          _addDeviceTolist(result.device);
+        }
       }
     });
     widget.flutterBlue.startScan();
   }
 
   ListView _buildListViewOfDevices() {
+    //TODO Update UI to match home and slot
     List<Container> containers = new List<Container>();
     for (BluetoothDevice device in widget.devicesList) {
       containers.add(
@@ -77,6 +116,9 @@ class _BleConnectState extends State<BleConnect> {
                     }
                   } finally {
                     _services = await device.discoverServices();
+                    beginNotification();
+                    gotoHomePage(context);
+                    //
                   }
                   setState(() {
                     _connectedDevice = device;
@@ -100,79 +142,6 @@ class _BleConnectState extends State<BleConnect> {
   List<ButtonTheme> _buildReadWriteNotifyButton(
       BluetoothCharacteristic characteristic) {
     List<ButtonTheme> buttons = new List<ButtonTheme>();
-
-    if (characteristic.properties.read) {
-      buttons.add(
-        ButtonTheme(
-          minWidth: 10,
-          height: 20,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: RaisedButton(
-              color: Colors.blue,
-              child: Text('READ', style: TextStyle(color: Colors.white)),
-              onPressed: () async {
-                var sub = characteristic.value.listen((value) {
-                  setState(() {
-                    widget.readValues[characteristic.uuid] = value;
-                  });
-                });
-                await characteristic.read();
-                sub.cancel();
-              },
-            ),
-          ),
-        ),
-      );
-    }
-    if (characteristic.properties.write) {
-      buttons.add(
-        ButtonTheme(
-          minWidth: 10,
-          height: 20,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: RaisedButton(
-              child: Text('WRITE', style: TextStyle(color: Colors.white)),
-              onPressed: () async {
-                await showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: Text("Write"),
-                        content: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: TextField(
-                                controller: _writeController,
-                              ),
-                            ),
-                          ],
-                        ),
-                        actions: <Widget>[
-                          FlatButton(
-                            child: Text("Send"),
-                            onPressed: () {
-                              characteristic.write(
-                                  utf8.encode(_writeController.value.text));
-                              Navigator.pop(context);
-                            },
-                          ),
-                          FlatButton(
-                            child: Text("Cancel"),
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ],
-                      );
-                    });
-              },
-            ),
-          ),
-        ),
-      );
-    }
     if (characteristic.properties.notify) {
       buttons.add(
         ButtonTheme(
@@ -185,6 +154,8 @@ class _BleConnectState extends State<BleConnect> {
               onPressed: () async {
                 characteristic.value.listen((value) {
                   widget.readValues[characteristic.uuid] = value;
+                  cardStatus(value);
+                  print(value);
                 });
                 await characteristic.setNotifyValue(true);
               },
@@ -202,35 +173,40 @@ class _BleConnectState extends State<BleConnect> {
 
     for (BluetoothService service in _services) {
       List<Widget> characteristicsWidget = new List<Widget>();
-
-      for (BluetoothCharacteristic characteristic in service.characteristics) {
-        characteristicsWidget.add(
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Column(
-              children: <Widget>[
-                Row(
+      print(service.uuid.toString() == send_uuid);
+      if (service.uuid.toString() == send_uuid) {
+        for (BluetoothCharacteristic characteristic
+            in service.characteristics) {
+          if (characteristic.uuid.toString() == recieve_uuid) {
+            characteristicsWidget.add(
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Column(
                   children: <Widget>[
-                    Text(characteristic.uuid.toString(),
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Row(
+                      children: <Widget>[
+                        Text(characteristic.uuid.toString(),
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    Row(
+                      children: <Widget>[
+                        ..._buildReadWriteNotifyButton(characteristic),
+                      ],
+                    ),
+                    Row(
+                      children: <Widget>[
+                        Text('Value: ' +
+                            widget.readValues[characteristic.uuid].toString()),
+                      ],
+                    ),
+                    Divider(),
                   ],
                 ),
-                Row(
-                  children: <Widget>[
-                    ..._buildReadWriteNotifyButton(characteristic),
-                  ],
-                ),
-                Row(
-                  children: <Widget>[
-                    Text('Value: ' +
-                        widget.readValues[characteristic.uuid].toString()),
-                  ],
-                ),
-                Divider(),
-              ],
-            ),
-          ),
-        );
+              ),
+            );
+          }
+        }
       }
       containers.add(
         Container(

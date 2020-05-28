@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:quallet_scratch_v1/home.dart';
 import 'HexColor.dart';
+import 'package:scoped_model/scoped_model.dart';
+import 'scoped_model/slot_model.dart';
+import 'logic.dart';
 
 class SlotScreen extends StatefulWidget {
   @override
@@ -8,6 +11,10 @@ class SlotScreen extends StatefulWidget {
 }
 
 class _SlotScreenState extends State<SlotScreen> {
+  void updateCardStatus(List inputValues) {
+    if (inputValues[0] == true) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     const TextStyle optionStyle = TextStyle(
@@ -30,14 +37,18 @@ class _SlotScreenState extends State<SlotScreen> {
               padding: EdgeInsets.symmetric(vertical: 10.0),
               color: HexColor('#3a91d4'), //TODO Change Background Color
               child: Center(
-                child: Text(
-                  'Card is in.',
-                  style: TextStyle(
-                    fontSize: 50.0,
-                    color: Colors.green.shade300,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: ScopedModelDescendant<SlotModel>(builder:
+                    (BuildContext context, Widget child, SlotModel model) {
+                  child:
+                  Text(
+                    'Card 1 is in',
+                    style: TextStyle(
+                      fontSize: 50.0,
+                      color: Colors.green.shade300,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }),
               ),
             ),
             Container(
