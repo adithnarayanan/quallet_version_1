@@ -1,22 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:quallet_scratch_v1/home.dart';
+import 'package:quallet_scratch_v1/slot_two.dart';
 import 'HexColor.dart';
-import 'package:scoped_model/scoped_model.dart';
-import 'scoped_model/slot_model.dart';
+import 'slot_one.dart';
 import 'logic.dart';
 
 class SlotScreen extends StatefulWidget {
+  int cardNumber;
+  SlotScreen({Key key, this.cardNumber}) : super(key: key);
+
   @override
-  _SlotScreenState createState() => _SlotScreenState();
+  _SlotScreenState createState() => _SlotScreenState(cardNumber);
 }
 
 class _SlotScreenState extends State<SlotScreen> {
+  int cardNumber;
+  _SlotScreenState(this.cardNumber);
+
   void updateCardStatus(List inputValues) {
     if (inputValues[0] == true) {}
   }
 
+  Text statusText(bool status) {
+    if (status) {
+      return Text(
+        'Card $cardNumber is in',
+        style: TextStyle(
+          fontSize: 50.0,
+          color: Colors.green.shade300,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    } else {
+      return Text(
+        'Card $cardNumber is Out',
+        style: TextStyle(
+          fontSize: 50.0,
+          color: Colors.red.shade400,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    dynamic slot;
+    if (cardNumber == 1) {
+      slot = Provider.of<SlotOne>(context);
+    } else {
+      slot = Provider.of<SlotTwo>(context);
+    }
+
     const TextStyle optionStyle = TextStyle(
         fontSize: 50, fontWeight: FontWeight.bold, color: Colors.white);
 
@@ -36,20 +72,7 @@ class _SlotScreenState extends State<SlotScreen> {
             Container(
               padding: EdgeInsets.symmetric(vertical: 10.0),
               color: HexColor('#3a91d4'), //TODO Change Background Color
-              child: Center(
-                child: ScopedModelDescendant<SlotModel>(builder:
-                    (BuildContext context, Widget child, SlotModel model) {
-                  child:
-                  Text(
-                    'Card 1 is in',
-                    style: TextStyle(
-                      fontSize: 50.0,
-                      color: Colors.green.shade300,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  );
-                }),
-              ),
+              child: Center(child: statusText(slot.status)),
             ),
             Container(
               child: Column(

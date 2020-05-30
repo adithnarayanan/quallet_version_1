@@ -1,15 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:quallet_scratch_v1/slot.dart';
 import 'HexColor.dart';
+import 'slot_one.dart';
+import 'slot_two.dart';
 
 class Home extends StatefulWidget {
   @override
   _Home createState() => _Home();
 }
 
+Icon statusIcon(bool status) {
+  if (status) {
+    return Icon(
+      Icons.fiber_manual_record,
+      color: Colors.green,
+    );
+  } else {
+    return Icon(
+      Icons.fiber_manual_record,
+      color: Colors.red,
+    );
+  }
+}
+
 class _Home extends State<Home> {
   @override
   Widget build(BuildContext context) {
+    final slotOne = Provider.of<SlotOne>(context);
+    final slotTwo = Provider.of<SlotTwo>(context);
+
     const TextStyle optionStyle = TextStyle(
         fontSize: 50, fontWeight: FontWeight.bold, color: Colors.white);
 
@@ -52,10 +72,7 @@ class _Home extends State<Home> {
                     child: Card(
                       //margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 25.0),
                       child: ListTile(
-                        leading: Icon(
-                          Icons.fiber_manual_record,
-                          color: Colors.green,
-                        ),
+                        leading: statusIcon(slotOne.status),
                         trailing: Icon(
                           Icons.arrow_forward_ios,
                           color: Colors.white,
@@ -75,17 +92,15 @@ class _Home extends State<Home> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => SlotScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => SlotScreen(cardNumber: 1)),
                       );
                     },
                   ),
                   FlatButton(
                     child: Card(
                       child: ListTile(
-                        leading: Icon(
-                          Icons.fiber_manual_record,
-                          color: Colors.green,
-                        ),
+                        leading: statusIcon(slotTwo.status),
                         trailing: Icon(
                           Icons.arrow_forward_ios,
                           color: Colors.white,
@@ -105,7 +120,8 @@ class _Home extends State<Home> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => SlotScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => SlotScreen(cardNumber: 2)),
                       );
                     },
                   ),

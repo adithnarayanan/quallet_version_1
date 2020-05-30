@@ -1,10 +1,12 @@
+import 'package:flutter/rendering.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:quallet_scratch_v1/home.dart';
 import 'HexColor.dart';
-import 'slot.dart';
-import 'dart:convert';
-import 'logic.dart';
+import 'slot_one.dart';
+import 'slot_two.dart';
+//import 'logic.dart';
 
 class BleConnect extends StatefulWidget {
   @override
@@ -16,12 +18,18 @@ class BleConnect extends StatefulWidget {
 }
 
 class _BleConnectState extends State<BleConnect> {
+  TextStyle optionStyle =
+      TextStyle(fontSize: 50, fontWeight: FontWeight.bold, color: Colors.white);
+
   final String send_uuid = '0000ffe0-0000-1000-8000-00805f9b34fb';
   final String recieve_uuid = '0000ffe1-0000-1000-8000-00805f9b34fb';
   BluetoothDevice _connectedDevice;
   List<BluetoothService> _services;
 
-  void beginNotification() async {
+  void beginNotification(BuildContext context) async {
+    final slotOne = Provider.of<SlotOne>(context, listen: false);
+    final slotTwo = Provider.of<SlotTwo>(context, listen: false);
+
     print("begin Notification started");
     BluetoothCharacteristic characteristic_real;
 
@@ -36,10 +44,33 @@ class _BleConnectState extends State<BleConnect> {
         }
       }
     }
-
     characteristic_real.value.listen((value) {
       widget.readValues[characteristic_real.uuid] = value;
-      cardStatus(value);
+
+      int slot1 = value[1];
+      int slot2 = value[5];
+
+      if (slot1 == 49) {
+        slotOne.updateStatus(true);
+        print('Card is in Slot 1');
+      } else if (slot1 == 48) {
+        slotOne.updateStatus(false);
+        print('Card is NOT in Slot 1');
+      } else {
+        print('ERROR: Indetermined');
+      }
+
+      if (slot2 == 49) {
+        slotTwo.updateStatus(true);
+        print('Card is in Slot 2');
+      } else if (slot2 == 48) {
+        slotTwo.updateStatus(false);
+        print('Card is NOT in Slot 2');
+      } else {
+        print('ERROR: Indetermined');
+      }
+
+      //cardStatus(value, context);
       //Home();
       print(value);
     });
@@ -59,6 +90,30 @@ class _BleConnectState extends State<BleConnect> {
       context,
       MaterialPageRoute(builder: (context) => Home()),
     );
+  }
+
+  void cardStatus(inputValues, BuildContext context) {
+    //print(inputValues)
+    int slot1 = inputValues[1];
+    int slot2 = inputValues[5];
+
+    // for slot 1
+    if (slot1 == 49) {
+      print('Card is in Slot 1');
+    } else if (slot1 == 48) {
+      print('Card is NOT in Slot 1');
+    } else {
+      print('ERROR: Indetermined');
+    }
+
+    // for slot 2
+    if (slot2 == 49) {
+      print('Card is in Slot 2');
+    } else if (slot2 == 48) {
+      print('Card is NOT in Slot 2');
+    } else {
+      print('ERROR: Indetermined');
+    }
   }
 
   @override
@@ -83,47 +138,61 @@ class _BleConnectState extends State<BleConnect> {
     widget.flutterBlue.startScan();
   }
 
-  ListView _buildListViewOfDevices() {
+  ListView _buildListViewOfDevices(BuildContext context) {
     //TODO Update UI to match home and slot
     List<Container> containers = new List<Container>();
     for (BluetoothDevice device in widget.devicesList) {
       containers.add(
         Container(
-          height: 50,
           child: Row(
             children: <Widget>[
               Expanded(
-                child: Column(
-                  children: <Widget>[
-                    Text(device.name == '' ? '(unknown device)' : device.name),
-                    Text(device.id.toString()),
-                  ],
-                ),
-              ),
-              FlatButton(
-                color: Colors.blue,
-                child: Text(
-                  'Connect',
-                  style: TextStyle(color: Colors.white),
-                ),
-                onPressed: () async {
-                  widget.flutterBlue.stopScan();
-                  try {
-                    await device.connect();
-                  } catch (e) {
-                    if (e.code != 'already_connected ') {
-                      throw e;
+                child: FlatButton(
+                  child: Card(
+                    //margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 25.0),
+                    child: ListTile(
+                      leading: Icon(
+                        // Icons.fiber_manual_record,
+                        // color: Colors.blue.shade900,
+                        Icons.bluetooth_connected,
+                        color: Colors.blue.shade900,
+                      ),
+                      // trailing: Icon(
+                      //  Icons.bluetooth_connected,
+                      //  color: Colors.white,
+                      // ),
+                      title: Text(
+                        device.name == '' ? '(unknown device)' : device.name,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    color: Color.fromARGB(35000, 0, 168, 243),
+                  ),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: EdgeInsets.all(0),
+                  onPressed: () async {
+                    widget.flutterBlue.stopScan();
+                    try {
+                      await device.connect();
+                    } catch (e) {
+                      if (e.code != 'already_connected ') {
+                        beginNotification(context);
+                        gotoHomePage(context);
+                      }
+                    } finally {
+                      _services = await device.discoverServices();
+                      beginNotification(context);
+                      gotoHomePage(context);
+                      //
                     }
-                  } finally {
-                    _services = await device.discoverServices();
-                    beginNotification();
-                    gotoHomePage(context);
-                    //
-                  }
-                  setState(() {
-                    _connectedDevice = device;
-                  });
-                },
+                    setState(() {
+                      _connectedDevice = device;
+                    });
+                  },
+                ),
               ),
             ],
           ),
@@ -132,108 +201,31 @@ class _BleConnectState extends State<BleConnect> {
     }
 
     return ListView(
+      shrinkWrap: true,
       padding: const EdgeInsets.all(8),
       children: <Widget>[
         ...containers,
       ],
     );
-  }
-
-  List<ButtonTheme> _buildReadWriteNotifyButton(
-      BluetoothCharacteristic characteristic) {
-    List<ButtonTheme> buttons = new List<ButtonTheme>();
-    if (characteristic.properties.notify) {
-      buttons.add(
-        ButtonTheme(
-          minWidth: 10,
-          height: 20,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: RaisedButton(
-              child: Text('NOTIFY', style: TextStyle(color: Colors.white)),
-              onPressed: () async {
-                characteristic.value.listen((value) {
-                  widget.readValues[characteristic.uuid] = value;
-                  cardStatus(value);
-                  print(value);
-                });
-                await characteristic.setNotifyValue(true);
-              },
-            ),
-          ),
-        ),
-      );
-    }
-
-    return buttons;
-  }
-
-  ListView _buildConnectDeviceView() {
-    List<Container> containers = new List<Container>();
-
-    for (BluetoothService service in _services) {
-      List<Widget> characteristicsWidget = new List<Widget>();
-      print(service.uuid.toString() == send_uuid);
-      if (service.uuid.toString() == send_uuid) {
-        for (BluetoothCharacteristic characteristic
-            in service.characteristics) {
-          if (characteristic.uuid.toString() == recieve_uuid) {
-            characteristicsWidget.add(
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Column(
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Text(characteristic.uuid.toString(),
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    Row(
-                      children: <Widget>[
-                        ..._buildReadWriteNotifyButton(characteristic),
-                      ],
-                    ),
-                    Row(
-                      children: <Widget>[
-                        Text('Value: ' +
-                            widget.readValues[characteristic.uuid].toString()),
-                      ],
-                    ),
-                    Divider(),
-                  ],
-                ),
-              ),
-            );
-          }
-        }
-      }
-      containers.add(
-        Container(
-          child: ExpansionTile(
-              title: Text(service.uuid.toString()),
-              children: characteristicsWidget),
-        ),
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(8),
-      children: <Widget>[
-        ...containers,
-      ],
-    );
-  }
-
-  ListView _buildView() {
-    if (_connectedDevice != null) {
-      return _buildConnectDeviceView();
-    }
-    return _buildListViewOfDevices();
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        body: _buildView(),
+        backgroundColor: HexColor('#00A8F3'),
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 32, 16, 10),
+                child: Text(
+                  'Pair Quallet',
+                  style: optionStyle,
+                ),
+              ),
+              _buildListViewOfDevices(context),
+            ],
+          ),
+        ),
       );
 }
