@@ -6,18 +6,6 @@ class SlotOne with ChangeNotifier {
 //  String name;
   bool status = true;
 
-  // String getName() {
-  //   return name;
-  // }
-
-  // int getNumber() {
-  //   return number;
-  // }
-
-  // bool getStatus() {
-  //   return status;
-  // }
-
   void updateStatus(bool status) {
     this.status = status;
     notifyListeners();

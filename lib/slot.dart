@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quallet_scratch_v1/home.dart';
 import 'package:quallet_scratch_v1/slot_two.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'HexColor.dart';
 import 'slot_one.dart';
-import 'logic.dart';
+import 'package:numberpicker/numberpicker.dart';
+import 'dart:async';
 
 class SlotScreen extends StatefulWidget {
   int cardNumber;
@@ -22,10 +24,103 @@ class _SlotScreenState extends State<SlotScreen> {
     if (inputValues[0] == true) {}
   }
 
+  Future<int> getFirstAlert(int cardNumber) async {
+    String keyName = 'card' + cardNumber.toString() + 'FirstAlert';
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int firstAlert = (prefs.getInt(keyName) ?? 5);
+    return firstAlert;
+  }
+
+  Future<int> getSecondAlert(int cardNumber) async {
+    String keyName = 'card' + cardNumber.toString() + 'SecondAlert';
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int secondAlert = (prefs.getInt(keyName) ?? 5);
+    return secondAlert;
+  }
+
+  Future<String> getCardName(int cardNumber) async {
+    String keyName = 'card' + cardNumber.toString() + 'Name';
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String cardName =
+        (prefs.getString(keyName) ?? 'Card ' + cardNumber.toString());
+    return cardName;
+  }
+
+  setFirstAlert(int cardNumber, int value) async {
+    String keyName = 'card' + cardNumber.toString() + 'FirstAlert';
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(keyName, value);
+  }
+
+  setSecondAlert(int cardNumber, int value) async {
+    String keyName = 'card' + cardNumber.toString() + 'SecondAlert';
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(keyName, value);
+  }
+
+  setCardName(int cardNumber, String name) async {
+    String keyName = 'card' + cardNumber.toString() + 'Name';
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(keyName, name);
+  }
+
+  // number picker
+  //int firstAlert;
+  int firstAlert;
+  int secondAlert;
+  String cardName;
+
+  void initAlerts() async {
+    firstAlert = await getFirstAlert(cardNumber);
+    secondAlert = await getSecondAlert(cardNumber);
+    cardName = await getCardName(cardNumber);
+  }
+
+  Future _showDialog1() async {
+    await showDialog<int>(
+        context: context,
+        builder: (BuildContext context) {
+          //TODO: Implement consistent Theme
+          return new NumberPickerDialog.integer(
+            minValue: 1,
+            maxValue: 60,
+            title: new Text("Set time for First Alert"),
+            initialIntegerValue: firstAlert,
+            infiniteLoop: true,
+          );
+        }).then((int value) {
+      if (value != null) {
+        setFirstAlert(cardNumber, value);
+        setState(() => firstAlert = value);
+      }
+    });
+  }
+
+  Future _showDialog2() async {
+    await showDialog<int>(
+        context: context,
+        builder: (BuildContext context) {
+          //TODO: Implement consistent Theme
+          return new NumberPickerDialog.integer(
+            minValue: 1,
+            maxValue: 60,
+            title: new Text("Set time for Second Alert"),
+            initialIntegerValue: secondAlert,
+            infiniteLoop: true,
+          );
+        }).then((int value) {
+      if (value != null) {
+        setSecondAlert(cardNumber, value);
+        setState(() => secondAlert = value);
+      }
+    });
+  }
+
   Text statusText(bool status) {
+    //card1Name = myController.text;
     if (status) {
       return Text(
-        'Card $cardNumber is in',
+        '$cardName is In',
         style: TextStyle(
           fontSize: 50.0,
           color: Colors.green.shade300,
@@ -34,7 +129,7 @@ class _SlotScreenState extends State<SlotScreen> {
       );
     } else {
       return Text(
-        'Card $cardNumber is Out',
+        '$cardName is Out',
         style: TextStyle(
           fontSize: 50.0,
           color: Colors.red.shade400,
@@ -42,6 +137,21 @@ class _SlotScreenState extends State<SlotScreen> {
         ),
       );
     }
+  }
+
+  final myController = TextEditingController();
+
+  @override
+  void dispose() {
+    // Cleans up the controller when the widget is disposed.
+    myController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initAlerts();
   }
 
   @override
@@ -65,7 +175,7 @@ class _SlotScreenState extends State<SlotScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 32, 16, 10),
               child: Text(
-                'Slot 1',
+                'Slot $cardNumber',
                 style: optionStyle,
               ),
             ),
@@ -74,6 +184,29 @@ class _SlotScreenState extends State<SlotScreen> {
               color: HexColor('#3a91d4'), //TODO Change Background Color
               child: Center(child: statusText(slot.status)),
             ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  flex: 4,
+                  child: TextField(
+                    controller: myController,
+                  ),
+                ),
+                Expanded(
+                  child: FlatButton(
+                    onPressed: () {
+                      String card1Name = myController.text;
+                      setCardName(cardNumber, card1Name);
+                      setState(() {
+                        cardName = card1Name;
+                      });
+                    },
+                    child: Icon(Icons.arrow_forward_ios),
+                  ),
+                )
+              ],
+            ),
+
             Container(
               child: Column(
                   // TODO: Fix padding issue between info cards
@@ -140,13 +273,19 @@ class _SlotScreenState extends State<SlotScreen> {
                   Card(
                     //margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 25.0),
                     child: ListTile(
-                      trailing: Text(
-                        // TODO: Implement Number Picker
-                        '6 mins',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16.0,
+                      trailing: FlatButton(
+                        child: Text(
+                          '$firstAlert mins',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16.0,
+                          ),
                         ),
+                        padding: EdgeInsets.all(0),
+                        color: HexColor('#00A8F3'),
+                        shape: new RoundedRectangleBorder(
+                            borderRadius: new BorderRadius.circular(30.0)),
+                        onPressed: _showDialog1,
                       ),
                       title: Text(
                         'Time Before Notification',
@@ -171,19 +310,25 @@ class _SlotScreenState extends State<SlotScreen> {
                   Card(
                     //margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 25.0),
                     child: ListTile(
-                      trailing: Text(
-                        // TODO: Implement Second Notification Number Picker
-                        '9 mins',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16.0,
-                        ),
-                      ),
-                      title: Text(
-                        'Time Second Before Notification',
-                        style: TextStyle(
+                      trailing: FlatButton(
+                        child: Text(
+                          '$secondAlert mins',
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 16.0,
+                          ),
+                        ),
+                        padding: EdgeInsets.all(0),
+                        color: HexColor('#00A8F3'),
+                        shape: new RoundedRectangleBorder(
+                            borderRadius: new BorderRadius.circular(30.0)),
+                        onPressed: _showDialog2,
+                      ),
+                      title: Text(
+                        'Time Before Second Notification',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15.0,
                             fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -211,10 +356,7 @@ class _SlotScreenState extends State<SlotScreen> {
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 padding: EdgeInsets.all(0),
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => Home()),
-                  );
+                  Navigator.pop(context);
                 },
                 child: Card(
                   //margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 25.0),

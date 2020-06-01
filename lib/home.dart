@@ -4,6 +4,7 @@ import 'package:quallet_scratch_v1/slot.dart';
 import 'HexColor.dart';
 import 'slot_one.dart';
 import 'slot_two.dart';
+import 'transitions.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -90,11 +91,12 @@ class _Home extends State<Home> {
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     padding: EdgeInsets.all(0),
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => SlotScreen(cardNumber: 1)),
-                      );
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //       builder: (context) => SlotScreen(cardNumber: 1)),
+                      // );
+                      Navigator.of(context).push(slotScreenTransOne());
                     },
                   ),
                   FlatButton(
@@ -122,6 +124,7 @@ class _Home extends State<Home> {
                         context,
                         MaterialPageRoute(
                             builder: (context) => SlotScreen(cardNumber: 2)),
+                        //Navigator.of(context).push(slotScreenTrans());
                       );
                     },
                   ),

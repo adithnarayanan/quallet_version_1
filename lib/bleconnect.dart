@@ -69,9 +69,6 @@ class _BleConnectState extends State<BleConnect> {
       } else {
         print('ERROR: Indetermined');
       }
-
-      //cardStatus(value, context);
-      //Home();
       print(value);
     });
     await characteristic_real.setNotifyValue(true);
@@ -90,30 +87,6 @@ class _BleConnectState extends State<BleConnect> {
       context,
       MaterialPageRoute(builder: (context) => Home()),
     );
-  }
-
-  void cardStatus(inputValues, BuildContext context) {
-    //print(inputValues)
-    int slot1 = inputValues[1];
-    int slot2 = inputValues[5];
-
-    // for slot 1
-    if (slot1 == 49) {
-      print('Card is in Slot 1');
-    } else if (slot1 == 48) {
-      print('Card is NOT in Slot 1');
-    } else {
-      print('ERROR: Indetermined');
-    }
-
-    // for slot 2
-    if (slot2 == 49) {
-      print('Card is in Slot 2');
-    } else if (slot2 == 48) {
-      print('Card is NOT in Slot 2');
-    } else {
-      print('ERROR: Indetermined');
-    }
   }
 
   @override
@@ -139,7 +112,6 @@ class _BleConnectState extends State<BleConnect> {
   }
 
   ListView _buildListViewOfDevices(BuildContext context) {
-    //TODO Update UI to match home and slot
     List<Container> containers = new List<Container>();
     for (BluetoothDevice device in widget.devicesList) {
       containers.add(
