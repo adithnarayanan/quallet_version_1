@@ -25,6 +25,7 @@ dependencies:
     sdk: flutter
   flutter_blue: ^0.7.2
   numberpicker: ^1.2.0
+  flutter_local_notifications: ^1.4.4+1
 
 
   # The following adds the Cupertino Icons font to your application.

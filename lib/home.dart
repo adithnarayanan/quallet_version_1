@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quallet_scratch_v1/slot.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'HexColor.dart';
+import 'bleconnect.dart';
 import 'slot_one.dart';
 import 'slot_two.dart';
 import 'transitions.dart';
+//import 'package:flutter/scheduler.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/cupertino.dart';
+import 'notifications.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -207,7 +213,75 @@ class _Home extends State<Home> {
                     ),
                   ]),
             ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(0, 70, 0, 0),
+              child: InkWell(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: Text('Unpair Quallet'),
+                      content: Text(
+                          'This will unpair your quallet and clear all your preferences. Are you sure you want to proceed'),
+                      actions: <Widget>[
+                        FlatButton(
+                          child: Text("Yes"),
+                          onPressed: () async {
+                            Navigator.of(context).pop();
+                            SharedPreferences prefs =
+                                await SharedPreferences.getInstance();
+                            await prefs.clear();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => BleConnect()),
+                            );
+                          },
+                        ),
+                        FlatButton(
+                          child: Text("No"),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        )
+                      ],
+                    ),
+                    barrierDismissible: true,
+                  );
+                },
+                child: Card(
+                  child: ListTile(
+                    title: Text(
+                      'Unpair Your Quallet',
+                      style:
+                          TextStyle(color: Colors.red.shade900, fontSize: 16.0),
+                    ),
+                  ),
+                  color: Color.fromARGB(35000, 0, 168, 243),
+                ),
+              ),
+            )
           ],
+        ),
+      ),
+    );
+  }
+}
+
+//for notifications
+class SecondRoute extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('AlertPage'),
+      ),
+      body: Center(
+        child: RaisedButton(
+          child: Text('go back...'),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
       ),
     );

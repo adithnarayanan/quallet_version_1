@@ -6,6 +6,7 @@ import 'package:quallet_scratch_v1/home.dart';
 import 'HexColor.dart';
 import 'slot_one.dart';
 import 'slot_two.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 //import 'logic.dart';
 
 class BleConnect extends StatefulWidget {
@@ -25,6 +26,25 @@ class _BleConnectState extends State<BleConnect> {
   final String recieve_uuid = '0000ffe1-0000-1000-8000-00805f9b34fb';
   BluetoothDevice _connectedDevice;
   List<BluetoothService> _services;
+  String deviceId;
+  SharedPreferences prefs;
+
+  Future<String> getBleDeviceID() async {
+    String keyName = 'bleDeviceId';
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String firstAlert = (prefs.getString(keyName));
+    return firstAlert;
+  }
+
+  Future<String> setBleDeviceId(String value) async {
+    String keyName = 'bleDeviceId';
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString(keyName, value);
+    return 'lol';
+  }
+  // void setBleDeviceId() async {
+  //   String keyName = 'bleDeviceId';
+  // }
 
   void beginNotification(BuildContext context) async {
     final slotOne = Provider.of<SlotOne>(context, listen: false);
@@ -89,26 +109,113 @@ class _BleConnectState extends State<BleConnect> {
     );
   }
 
+  void initAlerts() async {
+    //deviceId = await getBleDeviceID();
+    try {
+      prefs = await SharedPreferences.getInstance();
+    } catch (e) {
+      print(e);
+    } finally {
+      deviceId = prefs.getString('bleDeviceId');
+      print(deviceId);
+      widget.flutterBlue.connectedDevices
+          .asStream()
+          .listen((List<BluetoothDevice> devices) async {
+        for (BluetoothDevice device in devices) {
+          print(device.id.id);
+          if (device.id.id == deviceId) {
+            print('equal');
+            widget.flutterBlue.stopScan();
+            try {
+              print(device.id);
+              await device.connect();
+            } catch (e) {
+              if (e.code != 'already_connected ') {
+                beginNotification(context);
+                gotoHomePage(context);
+              }
+            } finally {
+              _services = await device.discoverServices();
+              beginNotification(context);
+              gotoHomePage(context);
+              //
+            }
+          }
+          if (device.name.contains('Quallet')) {
+            _addDeviceTolist(device);
+          }
+        }
+      });
+      widget.flutterBlue.scanResults.listen((List<ScanResult> results) async {
+        for (ScanResult result in results) {
+          if (result.device.id.id == deviceId) {
+            print('equal');
+            widget.flutterBlue.stopScan();
+            try {
+              //print(device.id);
+              await result.device.connect();
+            } catch (e) {
+              if (e.code != 'already_connected ') {
+                beginNotification(context);
+                gotoHomePage(context);
+              }
+            } finally {
+              _services = await result.device.discoverServices();
+              beginNotification(context);
+              gotoHomePage(context);
+              //
+            }
+          }
+          if (result.device.name.contains('Quallet')) {
+            _addDeviceTolist(result.device);
+          }
+        }
+      });
+      widget.flutterBlue.startScan();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    widget.flutterBlue.connectedDevices
-        .asStream()
-        .listen((List<BluetoothDevice> devices) {
-      for (BluetoothDevice device in devices) {
-        if (device.name.contains('Quallet')) {
-          _addDeviceTolist(device);
-        }
-      }
-    });
-    widget.flutterBlue.scanResults.listen((List<ScanResult> results) {
-      for (ScanResult result in results) {
-        if (result.device.name.contains('Quallet')) {
-          _addDeviceTolist(result.device);
-        }
-      }
-    });
-    widget.flutterBlue.startScan();
+    initAlerts();
+    // deviceId = prefs.getString('bleDeviceId');
+    // print(deviceId);
+    // deviceId = null;
+    // widget.flutterBlue.connectedDevices
+    //     .asStream()
+    //     .listen((List<BluetoothDevice> devices) async {
+    //   for (BluetoothDevice device in devices) {
+    //     if (device.id.id == deviceId) {
+    //       widget.flutterBlue.stopScan();
+    //       try {
+    //         print(device.id);
+    //         await device.connect();
+    //       } catch (e) {
+    //         if (e.code != 'already_connected ') {
+    //           beginNotification(context);
+    //           gotoHomePage(context);
+    //         }
+    //       } finally {
+    //         _services = await device.discoverServices();
+    //         beginNotification(context);
+    //         gotoHomePage(context);
+    //         //
+    //       }
+    //     }
+    //     if (device.name.contains('Quallet')) {
+    //       _addDeviceTolist(device);
+    //     }
+    //   }
+    // });
+    // widget.flutterBlue.scanResults.listen((List<ScanResult> results) {
+    //   for (ScanResult result in results) {
+    //     if (result.device.name.contains('Quallet')) {
+    //       _addDeviceTolist(result.device);
+    //     }
+    //   }
+    // });
+    // widget.flutterBlue.startScan();
   }
 
   ListView _buildListViewOfDevices(BuildContext context) {
@@ -148,7 +255,12 @@ class _BleConnectState extends State<BleConnect> {
                   onPressed: () async {
                     widget.flutterBlue.stopScan();
                     try {
+                      //print(device.id);
                       await device.connect();
+                      prefs.setString('bleDeviceId', device.id.id);
+                      //await setBleDeviceId(device.id.id);
+                      print('connecting');
+                      print(device.id.id);
                     } catch (e) {
                       if (e.code != 'already_connected ') {
                         beginNotification(context);
@@ -196,6 +308,18 @@ class _BleConnectState extends State<BleConnect> {
                 ),
               ),
               _buildListViewOfDevices(context),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  0,
+                  30,
+                  0,
+                  0,
+                ),
+                child: Center(
+                    child: CircularProgressIndicator(
+                  backgroundColor: Colors.amber,
+                )),
+              )
             ],
           ),
         ),
