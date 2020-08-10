@@ -102,10 +102,13 @@ class _BleConnectState extends State<BleConnect> {
     }
   }
 
-  void gotoHomePage(BuildContext context) {
+  void gotoHomePage(BuildContext context, BluetoothDevice device) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => Home()),
+      MaterialPageRoute(
+          builder: (context) => Home(
+                device: device,
+              )),
     );
   }
 
@@ -132,12 +135,12 @@ class _BleConnectState extends State<BleConnect> {
             } catch (e) {
               if (e.code != 'already_connected ') {
                 beginNotification(context);
-                gotoHomePage(context);
+                gotoHomePage(context, device);
               }
             } finally {
               _services = await device.discoverServices();
               beginNotification(context);
-              gotoHomePage(context);
+              gotoHomePage(context, device);
               //
             }
           }
@@ -157,12 +160,12 @@ class _BleConnectState extends State<BleConnect> {
             } catch (e) {
               if (e.code != 'already_connected ') {
                 beginNotification(context);
-                gotoHomePage(context);
+                gotoHomePage(context, result.device);
               }
             } finally {
               _services = await result.device.discoverServices();
               beginNotification(context);
-              gotoHomePage(context);
+              gotoHomePage(context, result.device);
               //
             }
           }
@@ -264,12 +267,12 @@ class _BleConnectState extends State<BleConnect> {
                     } catch (e) {
                       if (e.code != 'already_connected ') {
                         beginNotification(context);
-                        gotoHomePage(context);
+                        gotoHomePage(context, device);
                       }
                     } finally {
                       _services = await device.discoverServices();
                       beginNotification(context);
-                      gotoHomePage(context);
+                      gotoHomePage(context, device);
                       //
                     }
                     setState(() {

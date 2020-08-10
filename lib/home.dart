@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_blue/flutter_blue.dart';
 import 'package:provider/provider.dart';
 import 'package:quallet_scratch_v1/slot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,13 +9,16 @@ import 'slot_one.dart';
 import 'slot_two.dart';
 import 'transitions.dart';
 //import 'package:flutter/scheduler.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/cupertino.dart';
-import 'notifications.dart';
 
 class Home extends StatefulWidget {
+  BluetoothDevice device;
+  Home({Key key, this.device}) : super(key: key);
+
   @override
-  _Home createState() => _Home();
+  _Home createState() => _Home(device);
+
+  // final FlutterBlue flutterBlue = FlutterBlue.instance;
 }
 
 Icon statusIcon(bool status) {
@@ -32,6 +36,9 @@ Icon statusIcon(bool status) {
 }
 
 class _Home extends State<Home> {
+  BluetoothDevice device;
+  _Home(this.device);
+
   @override
   Widget build(BuildContext context) {
     final slotOne = Provider.of<SlotOne>(context);
@@ -228,14 +235,20 @@ class _Home extends State<Home> {
                           child: Text("Yes"),
                           onPressed: () async {
                             Navigator.of(context).pop();
-                            SharedPreferences prefs =
-                                await SharedPreferences.getInstance();
-                            await prefs.clear();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => BleConnect()),
-                            );
+                            device.disconnect();
+                            try {
+                              SharedPreferences prefs =
+                                  await SharedPreferences.getInstance();
+                              await prefs.clear();
+                            } catch (e) {
+                              print(e);
+                            } finally {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => BleConnect()),
+                              );
+                            }
                           },
                         ),
                         FlatButton(

@@ -5,8 +5,9 @@ import 'slot.dart';
 // custom screen transitions
 Route slotScreenTransOne() {
   return PageRouteBuilder(
-    pageBuilder: (context, animation, secondaryAnimation) =>
-        SlotScreen(cardNumber: 1),
+    pageBuilder: (context, animation, secondaryAnimation) => SlotScreen(
+      cardNumber: 1,
+    ),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       var begin = Offset(1.0, 0.0);
       var end = Offset.zero;
@@ -24,8 +25,9 @@ Route slotScreenTransOne() {
 
 Route slotScreenTransTwo() {
   return PageRouteBuilder(
-    pageBuilder: (context, animation, secondaryAnimation) =>
-        SlotScreen(cardNumber: 2),
+    pageBuilder: (context, animation, secondaryAnimation) => SlotScreen(
+      cardNumber: 2,
+    ),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       var begin = Offset(1.0, 0.0);
       var end = Offset.zero;
