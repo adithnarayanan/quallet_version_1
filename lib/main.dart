@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quallet_scratch_v1/home.dart';
 import 'package:quallet_scratch_v1/slot.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'bleconnect.dart';
 import 'slot_one.dart';
 import 'slot_two.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/cupertino.dart';
+import 'dart:async';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(MyApp());
@@ -36,6 +39,13 @@ class _MyAppState extends State<MyApp> {
         initializationSettingsAndroid, initializationSettingsIOS);
     flutterLocalNotificationsPlugin.initialize(initializationSettings,
         onSelectNotification: onSelectNotification);
+
+    // locks app in portrait orientation
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    //initCardValues();
   }
 
   Future onSelectNotification(String payload) async {

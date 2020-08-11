@@ -39,6 +39,42 @@ class _Home extends State<Home> {
   BluetoothDevice device;
   _Home(this.device);
 
+  void initCardValues() async {
+    SharedPreferences prefs;
+    final slotOne = Provider.of<SlotOne>(context, listen: false);
+    final slotTwo = Provider.of<SlotTwo>(context, listen: false);
+
+    try {
+      prefs = await SharedPreferences.getInstance();
+    } catch (e) {
+      print(e);
+    } finally {
+      print('setting values');
+      slotOne.setValues(
+          (prefs.getInt('card1FirstAlert') ?? 15),
+          (prefs.getInt('card1SecondAlert') ?? 25),
+          prefs.getString('card1Name'),
+          DateTime.parse((prefs.getString('card1LastRemoved') ??
+              DateTime.now().toIso8601String())),
+          DateTime.parse((prefs.getString('card1LastReplaced') ??
+              DateTime.now().toIso8601String())));
+      slotTwo.setValues(
+          (prefs.getInt('card2FirstAlert') ?? 1),
+          (prefs.getInt('card2SecondAlert') ?? 5),
+          prefs.getString('card2Name'),
+          DateTime.parse((prefs.getString('card2LastRemoved') ??
+              DateTime.now().toIso8601String())),
+          DateTime.parse((prefs.getString('card2LastReplaced') ??
+              DateTime.now().toIso8601String())));
+    }
+  }
+
+  @override
+  void initState() {
+    initCardValues();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     final slotOne = Provider.of<SlotOne>(context);
@@ -177,7 +213,7 @@ class _Home extends State<Home> {
                         ),
                         trailing: Text(
                           // TODO: Implement battery level of Quallet
-                          '69%',
+                          '50%',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16.0,
@@ -202,9 +238,10 @@ class _Home extends State<Home> {
                         ),
                         trailing: Text(
                           // TODO: Implement battery level of Quallet
-                          '6 hrs 9 mins ago',
+                          'Now',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Colors.green.shade800,
+                            fontWeight: FontWeight.bold,
                             fontSize: 16.0,
                           ),
                         ),
@@ -229,7 +266,7 @@ class _Home extends State<Home> {
                     builder: (_) => AlertDialog(
                       title: Text('Unpair Quallet'),
                       content: Text(
-                          'This will unpair your quallet and clear all your preferences. Are you sure you want to proceed'),
+                          'This action will unpair your Quallet from this device and clear all your preferences. Are you sure you want to proceed'),
                       actions: <Widget>[
                         FlatButton(
                           child: Text("Yes"),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:provider/provider.dart';
 import 'package:quallet_scratch_v1/slot_two.dart';
+import 'package:quallet_scratch_v1/transitions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'HexColor.dart';
 import 'slot_one.dart';
@@ -19,6 +20,8 @@ class SlotScreen extends StatefulWidget {
 class _SlotScreenState extends State<SlotScreen> {
   int cardNumber;
   _SlotScreenState(this.cardNumber);
+  var slot;
+  bool _validate = false;
 
   void updateCardStatus(List inputValues) {
     if (inputValues[0] == true) {}
@@ -27,7 +30,7 @@ class _SlotScreenState extends State<SlotScreen> {
   Future<int> getFirstAlert(int cardNumber) async {
     String keyName = 'card' + cardNumber.toString() + 'FirstAlert';
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    int firstAlert = (prefs.getInt(keyName) ?? 5);
+    int firstAlert = (prefs.getInt(keyName) ?? 1);
     return firstAlert;
   }
 
@@ -43,6 +46,7 @@ class _SlotScreenState extends State<SlotScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String cardName =
         (prefs.getString(keyName) ?? 'Card ' + cardNumber.toString());
+    //myController.text = cardName;
     return cardName;
   }
 
@@ -90,6 +94,7 @@ class _SlotScreenState extends State<SlotScreen> {
           );
         }).then((int value) {
       if (value != null) {
+        slot.setFirstAlert(value);
         setFirstAlert(cardNumber, value);
         setState(() => firstAlert = value);
       }
@@ -111,6 +116,7 @@ class _SlotScreenState extends State<SlotScreen> {
         }).then((int value) {
       if (value != null) {
         setSecondAlert(cardNumber, value);
+        slot.setSecondAlert(value);
         setState(() => secondAlert = value);
       }
     });
@@ -154,17 +160,34 @@ class _SlotScreenState extends State<SlotScreen> {
     initAlerts();
   }
 
+  String errorText(bool valid) {
+    if (valid) {
+      return 'Card Name Can\'t be empty';
+    }
+    return null;
+  }
+
+  final _formKey = GlobalKey<FormState>();
+
+  String getTimeDifference(DateTime dateTime) {
+    Duration difference = DateTime.now().difference(dateTime);
+    int days = difference.inDays;
+    int hours = difference.inHours;
+    int min = difference.inMinutes - hours * 60;
+
+    return '$hours hours and $min mins ago';
+  }
+
   @override
   Widget build(BuildContext context) {
-    dynamic slot;
+    const TextStyle optionStyle = TextStyle(
+        fontSize: 50, fontWeight: FontWeight.bold, color: Colors.white);
+
     if (cardNumber == 1) {
       slot = Provider.of<SlotOne>(context);
     } else {
       slot = Provider.of<SlotTwo>(context);
     }
-
-    const TextStyle optionStyle = TextStyle(
-        fontSize: 50, fontWeight: FontWeight.bold, color: Colors.white);
 
     return Scaffold(
       backgroundColor: HexColor('#00A8F3'),
@@ -180,33 +203,93 @@ class _SlotScreenState extends State<SlotScreen> {
                   style: optionStyle,
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 10.0),
-                color: HexColor('#3a91d4'), //TODO Change Background Color
-                child: Center(child: statusText(slot.status)),
-              ),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    flex: 4,
-                    child: TextField(
-                      controller: myController,
+              InkWell(
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 10.0),
+                  color: HexColor('#3a91d4'),
+                  //TODO Change Background Color
+                  child: Center(
+                      child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: FittedBox(
+                        fit: BoxFit.contain, child: statusText(slot.status)),
+                  )),
+                ),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: Text('Rename Slot $cardNumber'),
+                      content: Form(
+                        key: _formKey,
+                        child: TextFormField(
+                          controller: myController,
+                          validator: (value) {
+                            if (value.isEmpty) {
+                              return 'Card Name Can\'t be Empty';
+                            }
+                            return null;
+                          },
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Card Name',
+                            // errorText: errorText(
+                            //     _validate) //_validate ? 'Value Can\'t Be Empty' : null,
+                          ),
+                        ),
+                      ),
+                      actions: <Widget>[
+                        FlatButton(
+                          child: Text("Submit"),
+                          onPressed: () {
+                            if (_formKey.currentState.validate()) {
+                              String card1Name = myController.text;
+                              slot.setCardName(card1Name);
+                              setCardName(cardNumber, card1Name);
+                              setState(() {
+                                cardName = card1Name;
+                              });
+                              myController.clear();
+                              Navigator.of(context).pop();
+                            }
+                            if (!_validate) {}
+                          },
+                        ),
+                        FlatButton(
+                          child: Text("Cancel"),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        )
+                      ],
                     ),
-                  ),
-                  Expanded(
-                    child: FlatButton(
-                      onPressed: () {
-                        String card1Name = myController.text;
-                        setCardName(cardNumber, card1Name);
-                        setState(() {
-                          cardName = card1Name;
-                        });
-                      },
-                      child: Icon(Icons.arrow_forward_ios),
-                    ),
-                  )
-                ],
+                    barrierDismissible: true,
+                  );
+                },
               ),
+              // Row(
+              //   children: <Widget>[
+              //     Expanded(
+              //       flex: 4,
+              //       child: TextField(
+              //         controller: myController,
+              //       ),
+              //     ),
+              //     Expanded(
+              //       child: FlatButton(
+              //         onPressed: () {
+              //           String card1Name = myController.text;
+              //           slot.setCardName(card1Name);
+              //           setCardName(cardNumber, card1Name);
+              //           setState(() {
+              //             cardName = card1Name;
+              //           });
+              //         },
+              //         child: Icon(Icons.arrow_forward_ios),
+              //       ),
+              //     )
+              //   ],
+              // ),
 
               Container(
                 child: Column(
@@ -216,8 +299,7 @@ class _SlotScreenState extends State<SlotScreen> {
                         //margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 25.0),
                         child: ListTile(
                           trailing: Text(
-                            // TODO: Implement battery level of Quallet
-                            '6 hours and 9 mins ago',
+                            getTimeDifference(slot.lastRemoved),
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 16.0,
@@ -237,8 +319,7 @@ class _SlotScreenState extends State<SlotScreen> {
                         //margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 25.0),
                         child: ListTile(
                           trailing: Text(
-                            // TODO: Implement battery level of Quallet
-                            '4 hrs and 20 mins ago',
+                            getTimeDifference(slot.lastReplaced),
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 16.0,
